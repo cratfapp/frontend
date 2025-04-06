@@ -45,33 +45,38 @@ jobs:
           TF_VAR_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           TF_VAR_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Save Terraform Outputs to File
-        run: |
-          cd ./terraform
-          echo "$(terraform output cloudfront_distribution_id | grep -oE '".*"' | tr -d '"')" > ../distribution_id.txt
-          echo "$(terraform output cloudfront_url | grep -oE '".*"' | tr -d '"')" > ../cloudfront_url.txt
-          echo "$(terraform output s3_bucket_name | grep -oE '".*"' | tr -d '"')" > ../s3_bucket_name.txt
-          echo "Distribution ID: $(cat ../distribution_id.txt)"
-          echo "CloudFront URL: $(cat ../cloudfront_url.txt)"
-          echo "S3 Bucker Name: $(cat ../s3_bucket_name.txt)"
+      # - name: Save Terraform Outputs to File
+      #   run: |
+      #     cd ./terraform
+      #     echo "$(terraform output cloudfront_distribution_id | grep -oE '".*"' | tr -d '"')" > ../distribution_id.txt
+      #     echo "$(terraform output cloudfront_url | grep -oE '".*"' | tr -d '"')" > ../cloudfront_url.txt
+      #     echo "$(terraform output s3_bucket_name | grep -oE '".*"' | tr -d '"')" > ../s3_bucket_name.txt
+      #     echo "Distribution ID: $(cat ../distribution_id.txt)"
+      #     echo "CloudFront URL: $(cat ../cloudfront_url.txt)"
+      #     echo "S3 Bucker Name: $(cat ../s3_bucket_name.txt)"
 
-      - name: Debug Files
-        run: |
-          ls -l
-          echo "Contents of distribution_id.txt:"
-          cat distribution_id.txt
-          echo "Contents of cloudfront_url.txt:"
-          cat cloudfront_url.txt
-          echo "Contents of s3_bucket_name.txt:"
-          cat s3_bucket_name.txt
+      # - name: Debug Files
+      #   run: |
+      #     ls -l
+      #     echo "Contents of distribution_id.txt:"
+      #     cat distribution_id.txt
+      #     echo "Contents of cloudfront_url.txt:"
+      #     cat cloudfront_url.txt
+      #     echo "Contents of s3_bucket_name.txt:"
+      #     cat s3_bucket_name.txt
 
-      # Output the CloudFront distribution ID for the frontend deployment
-      - name: Upload Terraform Outputs as Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-outputs
-          path: |
-            distribution_id.txt
-            cloudfront_url.txt
-            s3_bucket_name.txt
-          retention-days: 1 
+      # # Output the CloudFront distribution ID for the frontend deployment
+      # - name: Upload Terraform Outputs as Artifacts
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: terraform-outputs
+      #     path: |
+      #       distribution_id.txt
+      #       cloudfront_url.txt
+      #       s3_bucket_name.txt
+      #     retention-days: 1 
+
+      - name: Store Outputs in SSM
+        run: |
+          aws ssm put-parameter --name "/app/s3-bucket" --value "$(terraform output s3_bucket_name | grep -oE '".*"' | tr -d '"')" --type String --overwrite
+          aws ssm put-parameter --name "/app/cf-id" --value "$(terraform output cloudfront_distribution_id | grep -oE '".*"' | tr -d '"')" --type String --overwrite
