@@ -1,79 +1,94 @@
-resource "aws_s3_bucket" "frontend" {
-  bucket = "my-project-frontend"
-  tags = {
-    Environment = "production"
+provider "aws" {
+  region = "us-east-1"
+
+}
+
+# Create S3 Bucket for Static Files
+resource "aws_s3_bucket" "frontend_bucket" {
+  bucket = "frontend-bucket-${random_id.suffix.hex}"
+  force_destroy = true
+}
+
+# Modern versioning configuration
+resource "aws_s3_bucket_versioning" "frontend_versioning" {
+  bucket = aws_s3_bucket.frontend_bucket.id
+  versioning_configuration {
+    status = "Enabled"
   }
 }
 
-resource "aws_s3_bucket_ownership_controls" "frontend" {
-  bucket = aws_s3_bucket.frontend.id
+# Modern website configuration
+resource "aws_s3_bucket_website_configuration" "frontend_website" {
+  bucket = aws_s3_bucket.frontend_bucket.id
 
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
+  }
+}
+
+# Modern ACL configuration (private by default)
+resource "aws_s3_bucket_ownership_controls" "frontend_ownership" {
+  bucket = aws_s3_bucket.frontend_bucket.id
   rule {
     object_ownership = "BucketOwnerEnforced"
   }
 }
 
-resource "aws_s3_bucket_public_access_block" "frontend" {
-  bucket = aws_s3_bucket.frontend.id
-
+# Block public access
+resource "aws_s3_bucket_public_access_block" "block_public" {
+  bucket = aws_s3_bucket.frontend_bucket.id
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
-resource "aws_cloudfront_origin_access_identity" "frontend" {
-  comment = "OAI for ${aws_s3_bucket.frontend.id}"
+# CloudFront Origin Access Identity (OAI)
+resource "aws_cloudfront_origin_access_identity" "oai" {
+  comment = "OAI for ${aws_s3_bucket.frontend_bucket.bucket}"
 }
 
-resource "aws_s3_bucket_policy" "frontend" {
-  bucket = aws_s3_bucket.frontend.id
-  policy = data.aws_iam_policy_document.s3_policy.json
+# S3 Bucket Policy (Allow CloudFront Only)
+resource "aws_s3_bucket_policy" "bucket_policy" {
+  bucket = aws_s3_bucket.frontend_bucket.id
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect    = "Allow",
+        Principal = {
+          AWS = "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${aws_cloudfront_origin_access_identity.oai.id}"
+        },
+        Action    = "s3:GetObject",
+        Resource  = "${aws_s3_bucket.frontend_bucket.arn}/*"
+      }
+    ]
+  })
 }
 
-data "aws_iam_policy_document" "s3_policy" {
-  statement {
-    actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.frontend.arn}/*"]
-    
-    principals {
-      type        = "AWS"
-      identifiers = [aws_cloudfront_origin_access_identity.frontend.iam_arn]
-    }
-  }
-
-  statement {
-    actions   = ["s3:ListBucket"]
-    resources = [aws_s3_bucket.frontend.arn]
-    
-    principals {
-      type        = "AWS"
-      identifiers = [aws_cloudfront_origin_access_identity.frontend.iam_arn]
-    }
-  }
-}
-
-resource "aws_cloudfront_distribution" "frontend" {
-  enabled             = true
-  is_ipv6_enabled     = true
-  default_root_object = "index.html"
-  # aliases = ["your-domain.com"]  # Only uncomment if you set up ACM cert
-
+# CloudFront Distribution
+resource "aws_cloudfront_distribution" "cdn" {
   origin {
-    domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name
-    origin_id   = "S3-${aws_s3_bucket.frontend.id}"
-    
+    domain_name = aws_s3_bucket.frontend_bucket.bucket_regional_domain_name
+    origin_id   = "S3-${aws_s3_bucket.frontend_bucket.bucket}"
+
     s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.frontend.cloudfront_access_identity_path
+      origin_access_identity = aws_cloudfront_origin_access_identity.oai.cloudfront_access_identity_path
     }
   }
+
+  enabled             = true
+  default_root_object = "index.html"
 
   default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    allowed_methods  = ["GET", "HEAD"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "S3-${aws_s3_bucket.frontend.id}"
-    compress         = true
-    
+    target_origin_id = "S3-${aws_s3_bucket.frontend_bucket.bucket}"
+
     forwarded_values {
       query_string = false
       cookies {
@@ -83,20 +98,8 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 86400
-    max_ttl                = 31536000
-  }
-
-  custom_error_response {
-    error_code         = 403
-    response_code      = 200
-    response_page_path = "/index.html"
-  }
-
-  custom_error_response {
-    error_code         = 404
-    response_code      = 200
-    response_page_path = "/index.html"
+    default_ttl            = 3600
+    max_ttl                = 86400
   }
 
   restrictions {
@@ -110,15 +113,11 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 }
 
-# Outputs for CI/CD pipeline
-output "s3_bucket_name" {
-  value = aws_s3_bucket.frontend.id
+# Output CloudFront URL and Distribution ID
+output "cloudfront_url" {
+  value = aws_cloudfront_distribution.cdn.domain_name
 }
 
 output "cloudfront_distribution_id" {
-  value = aws_cloudfront_distribution.frontend.id
-}
-
-output "cloudfront_domain_name" {
-  value = aws_cloudfront_distribution.frontend.domain_name
+  value = aws_cloudfront_distribution.cdn.id
 }
