@@ -46,7 +46,19 @@ jobs:
           TF_VAR_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       # Output the CloudFront distribution ID for the frontend deployment
-      - name: Save Terraform Outputs
+      - name: Save Outputs to File
         run: |
-          echo "CLOUDFRONT_ID=$(terraform output -raw cloudfront_distribution_id)" >> $GITHUB_ENV
-          echo "CLOUDFRONT_URL=$(terraform output -raw cloudfront_url)" >> $GITHUB_ENV
+          terraform output -json > outputs.json
+          echo '{
+            "CLOUDFRONT_ID": "$(terraform output -raw cloudfront_distribution_id)",
+            "CLOUDFRONT_URL": "$(terraform output -raw cloudfront_url)"
+          }' > outputs.env
+        shell: bash
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-outputs
+          path: |
+            outputs.json
+            outputs.env
