@@ -74,3 +74,4 @@ jobs:
             distribution_id.txt
             cloudfront_url.txt
             s3_bucket_name.txt
+          retention-days: 1 
