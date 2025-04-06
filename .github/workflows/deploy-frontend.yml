@@ -1,10 +1,9 @@
 name: Deploy Frontend
-on:
-  push:
-    branches: [ "main" ]
-    paths:
-      - 'frontend/**'
-      - '.github/workflows/deploy-frontend.yml'
+on:   
+  workflow_run:
+    workflows: ["Deploy Infrastructure"]
+    branches: [main]
+    types: [completed]
 
 jobs:
   deploy:
