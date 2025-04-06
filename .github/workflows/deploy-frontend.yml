@@ -10,7 +10,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: production
-    needs: terraform  # Make sure this matches your infrastructure job name
 
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
