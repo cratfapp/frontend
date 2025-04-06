@@ -16,17 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # - name: Download Terraform Outputs
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: terraform-outputs
-      #     path: ./terraform-outputs
-
-      # - name: Debug Terraform Outputs
-      #   run: |
-      #     echo "S3_BUCKET_NAME: $(cat ./terraform-outputs/s3_bucket_name.txt)"
-      #     echo "CloudFront Distribution ID: $(cat ./terraform-outputs/distribution_id.txt)"
-      #     echo "CloudFront URL: $(cat ./terraform-outputs/cloudfront_url.txt)"
       - name: Get SSM Parameters
         id: ssm
         run: |
