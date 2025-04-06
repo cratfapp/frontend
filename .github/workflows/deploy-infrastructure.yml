@@ -50,8 +50,10 @@ jobs:
           cd ./terraform
           echo "$(terraform output cloudfront_distribution_id | grep -oE '".*"' | tr -d '"')" > ../distribution_id.txt
           echo "$(terraform output cloudfront_url | grep -oE '".*"' | tr -d '"')" > ../cloudfront_url.txt
+          echo "$(terraform output s3_bucket_name | grep -oE '".*"' | tr -d '"')" > ../s3_bucket_name.txt
           echo "Distribution ID: $(cat ../distribution_id.txt)"
           echo "CloudFront URL: $(cat ../cloudfront_url.txt)"
+          echo "CloudFront URL: $(cat ../s3_bucket_name.txt)"
 
       - name: Debug Files
         run: |
@@ -60,6 +62,8 @@ jobs:
           cat distribution_id.txt
           echo "Contents of cloudfront_url.txt:"
           cat cloudfront_url.txt
+          echo "Contents of s3_bucket_name.txt:"
+          cat s3_bucket_name.txt
 
       # Output the CloudFront distribution ID for the frontend deployment
       - name: Upload Terraform Outputs as Artifacts
@@ -69,3 +73,4 @@ jobs:
           path: |
             distribution_id.txt
             cloudfront_url.txt
+            s3_bucket_name.txt
