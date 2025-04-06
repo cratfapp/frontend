@@ -33,14 +33,14 @@ jobs:
       - name: Deploy to S3
         run: |
           # Upload static assets with long cache
-          aws s3 sync ./dist s3://my-project-frontend-627b9e09 \
+          aws s3 sync ./dist s3://my-project-frontend-cb37ce20 \
             --delete \
             --cache-control "public, max-age=31536000, immutable" \
             --exclude "*.html" \
             --exclude "*.json"
           
           # Upload HTML files with no cache
-          aws s3 sync ./dist s3://my-project-frontend-627b9e09 \
+          aws s3 sync ./dist s3://my-project-frontend-cb37ce20 \
             --delete \
             --cache-control "public, max-age=0, must-revalidate" \
             --exclude "*" \
@@ -50,5 +50,5 @@ jobs:
       - name: Invalidate CloudFront Cache
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id my-project-frontend-627b9e09 \
+            --distribution-id E1MOWKMJ3P7B38 \
             --paths "/*"
