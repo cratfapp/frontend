@@ -5,7 +5,7 @@ provider "aws" {
 
 # Create S3 Bucket for Static Files
 resource "aws_s3_bucket" "frontend_bucket" {
-  bucket = "frontend-bucket-${random_id.suffix.hex}"
+  bucket = "frontend-bucket-1234"
   force_destroy = true
 }
 
