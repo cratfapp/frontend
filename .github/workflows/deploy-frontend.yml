@@ -27,15 +27,8 @@ jobs:
 
       - name: Install and Build
         run: |
-          cd frontend
           npm ci
           npm run build
-
-      - name: Get Terraform Outputs
-        id: terraform-outputs
-        run: |
-          echo "s3_bucket=$(aws ssm get-parameter --name '/my-app/s3-bucket' --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
-          echo "cf_dist_id=$(aws ssm get-parameter --name '/my-app/cf-dist-id' --query 'Parameter.Value' --output text)" >> $GITHUB_OUTPUT
 
       - name: Deploy to S3
         run: |
