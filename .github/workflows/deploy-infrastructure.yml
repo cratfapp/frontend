@@ -47,8 +47,11 @@ jobs:
 
       - name: Save Terraform Outputs to File
         run: |
-          echo "$(terraform output -raw cloudfront_distribution_id)" > distribution_id.txt
-          echo "$(terraform output -raw cloudfront_url)" > cloudfront_url.txt
+          cd ./terraform
+          echo "$(terraform output -raw cloudfront_distribution_id)" > ../distribution_id.txt
+          echo "$(terraform output -raw cloudfront_url)" > ../cloudfront_url.txt
+          echo "Distribution ID: $(cat ../distribution_id.txt)"
+          echo "CloudFront URL: $(cat ../cloudfront_url.txt)"
 
       - name: Debug Files
         run: |
