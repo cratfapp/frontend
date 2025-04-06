@@ -78,5 +78,14 @@ jobs:
 
       - name: Store Outputs in SSM
         run: |
-          aws ssm put-parameter --name "/app/s3-bucket" --value "$(terraform output s3_bucket_name | grep -oE '".*"' | tr -d '"')" --type String --overwrite
-          aws ssm put-parameter --name "/app/cf-id" --value "$(terraform output cloudfront_distribution_id | grep -oE '".*"' | tr -d '"')" --type String --overwrite
+          cd ./terraform
+          # Get raw outputs without quotes
+          S3_BUCKET=$(terraform output s3_bucket_name | grep -oE '".*"' | tr -d '"')
+          CF_ID=$(terraform output cloudfront_distribution_id | grep -oE '".*"' | tr -d '"')
+
+      - name: Store Outputs in SSM
+        run: |
+          aws ssm put-parameter --name "/app/s3-bucket" --value "$S3_BUCKET" --type String --overwrite
+          aws ssm put-parameter --name "/app/cf-id" --value "$CF_ID" --type String --overwrite
+          echo "Stored S3 Bucket: $S3_BUCKET"
+          echo "Stored CloudFront ID: $CF_ID"
