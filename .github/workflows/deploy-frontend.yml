@@ -1,9 +1,7 @@
 name: Deploy Frontend
 on:   
-  workflow_run:
-    workflows: ["Deploy Infrastructure"]
-    branches: [main]
-    types: [completed]
+  push:
+    branches: [ "main" ]
 
 jobs:
   deploy:
