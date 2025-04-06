@@ -1,9 +1,15 @@
 resource "aws_s3_bucket" "frontend" {
   bucket = "my-project-frontend"
-  object_ownership = "BucketOwnerEnforced"
-  
   tags = {
     Environment = "production"
+  }
+}
+
+resource "aws_s3_bucket_ownership_controls" "frontend" {
+  bucket = aws_s3_bucket.frontend.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
   }
 }
 
