@@ -82,6 +82,8 @@ jobs:
           # Get raw outputs without quotes
           S3_BUCKET=$(terraform output s3_bucket_name | grep -oE '".*"' | tr -d '"')
           CF_ID=$(terraform output cloudfront_distribution_id | grep -oE '".*"' | tr -d '"')
+          echo "Stored S3 Bucket: $S3_BUCKET"
+          echo "Stored CloudFront ID: $CF_ID"
 
       - name: Store Outputs in SSM
         run: |
