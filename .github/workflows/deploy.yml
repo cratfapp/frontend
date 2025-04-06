@@ -1,0 +1,45 @@
+name: Preprod Deployment
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Build project
+      run: |
+        npm install
+        npm run build
+        ls -R ./dist  # Verify build output (adjust if your build folder is different)
+      
+    - name: Install SSH key
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+      
+    - name: Deploy to EC2
+      run: |
+        # Create timestamped deployment directory
+        DEPLOY_DIR="/home/ubuntu/projects/my-project/deployments/$(date +%Y%m%d%H%M%S)"
+        
+        ssh ubuntu@${{ secrets.EC2_HOST }} << EOF
+        mkdir -p $DEPLOY_DIR
+        EOF
+        
+        # Copy only the built files (adjust 'dist' to your build directory)
+        rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
+          ./dist/ ubuntu@${{ secrets.EC2_HOST }}:$DEPLOY_DIR/
+        
+        # Update symlink to current deployment
+        ssh ubuntu@${{ secrets.EC2_HOST }} << EOF
+        ln -nfs $DEPLOY_DIR /home/ubuntu/projects/my-project/current
+        # Restart service if needed
+        # sudo systemctl restart my-service
+        EOF
