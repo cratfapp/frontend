@@ -46,8 +46,25 @@ jobs:
           TF_VAR_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       # Output the CloudFront distribution ID for the frontend deployment
-      - name: Save CloudFront Distribution ID
+      - name: Get Terraform Outputs
+        id: tf-outputs
         run: |
-          DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
+          # Change to your Terraform directory if needed
+          cd ./terraform || true
+          
+          # Get outputs with error handling
+          DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id 2>/dev/null | tr -d '\n')
+          S3_BUCKET=$(terraform output -raw s3_bucket_name 2>/dev/null | tr -d '\n')
+          
+          # Verify outputs exist
+          if [ -z "$DISTRIBUTION_ID" ] || [ -z "$S3_BUCKET" ]; then
+            echo "::error::Failed to get Terraform outputs"
+            exit 1
+          fi
+          
+          # Set GitHub outputs and environment variables
+          echo "distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
+          echo "s3_bucket=$S3_BUCKET" >> $GITHUB_OUTPUT
           echo "DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
-          echo "S3_BUCKET=$(terraform output -raw s3_bucket_name)" >> $GITHUB_ENV
+          echo "S3_BUCKET=$S3_BUCKET" >> $GITHUB_ENV
+        shell: bash
