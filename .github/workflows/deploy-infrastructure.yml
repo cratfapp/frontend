@@ -49,22 +49,36 @@ jobs:
       - name: Get Terraform Outputs
         id: tf-outputs
         run: |
-          # Change to your Terraform directory if needed
-          cd ./terraform || true
+          # Navigate to Terraform directory (if needed)
+          if [ -d "./terraform" ]; then
+            cd ./terraform
+          fi
           
-          # Get outputs with error handling
-          DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id 2>/dev/null | tr -d '\n')
-          S3_BUCKET=$(terraform output -raw s3_bucket_name 2>/dev/null | tr -d '\n')
+          # Get outputs using JSON format for reliability
+          OUTPUT_JSON=$(terraform output -json)
           
-          # Verify outputs exist
+          # Extract values using jq
+          DISTRIBUTION_ID=$(echo "$OUTPUT_JSON" | jq -r '.cloudfront_distribution_id.value')
+          S3_BUCKET=$(echo "$OUTPUT_JSON" | jq -r '.s3_bucket_name.value')
+          
+          # Verify outputs
           if [ -z "$DISTRIBUTION_ID" ] || [ -z "$S3_BUCKET" ]; then
-            echo "::error::Failed to get Terraform outputs"
+            echo "::error::Missing required Terraform outputs"
+            echo "Available outputs:"
+            terraform output
             exit 1
           fi
           
-          # Set GitHub outputs and environment variables
+          # Set GitHub outputs
           echo "distribution_id=$DISTRIBUTION_ID" >> $GITHUB_OUTPUT
           echo "s3_bucket=$S3_BUCKET" >> $GITHUB_OUTPUT
+          
+          # Set environment variables
           echo "DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
           echo "S3_BUCKET=$S3_BUCKET" >> $GITHUB_ENV
+          
+          # Debug output
+          echo "Successfully retrieved outputs:"
+          echo "CloudFront Distribution ID: $DISTRIBUTION_ID"
+          echo "S3 Bucket Name: $S3_BUCKET"
         shell: bash
