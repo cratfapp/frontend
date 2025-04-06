@@ -53,7 +53,7 @@ jobs:
           echo "$(terraform output s3_bucket_name | grep -oE '".*"' | tr -d '"')" > ../s3_bucket_name.txt
           echo "Distribution ID: $(cat ../distribution_id.txt)"
           echo "CloudFront URL: $(cat ../cloudfront_url.txt)"
-          echo "CloudFront URL: $(cat ../s3_bucket_name.txt)"
+          echo "S3 Bucker Name: $(cat ../s3_bucket_name.txt)"
 
       - name: Debug Files
         run: |
