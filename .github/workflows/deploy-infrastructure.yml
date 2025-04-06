@@ -1,0 +1,46 @@
+name: Deploy Infrastructure
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'terraform/**'  # Only run when Terraform files change
+      - '.github/workflows/deploy-infrastructure.yml'  # Or when this workflow changes
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    environment: production  # Use GitHub environment if you have one
+    permissions:
+      contents: read
+      id-token: write  # Needed if using OIDC
+
+    env:
+      AWS_REGION: "eu-north-1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Recommended: Use AWS OIDC instead of static credentials
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init -input=false ./terraform
+
+      - name: Terraform Plan
+        run: terraform plan -input=false -out=tfplan ./terraform
+
+      - name: Terraform Apply
+        run: terraform apply -input=false -auto-approve tfplan
+
+      # Output the CloudFront distribution ID for the frontend deployment
+      - name: Save CloudFront Distribution ID
+        run: |
+          DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
+          echo "DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
+          echo "S3_BUCKET=$(terraform output -raw s3_bucket_name)" >> $GITHUB_ENV
