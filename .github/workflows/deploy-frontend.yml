@@ -18,17 +18,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download Terraform Outputs
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-outputs
-          path: ./terraform-outputs
+      # - name: Download Terraform Outputs
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: terraform-outputs
+      #     path: ./terraform-outputs
+
+      # - name: Debug Terraform Outputs
+      #   run: |
+      #     echo "S3_BUCKET_NAME: $(cat ./terraform-outputs/s3_bucket_name.txt)"
+      #     echo "CloudFront Distribution ID: $(cat ./terraform-outputs/distribution_id.txt)"
+      #     echo "CloudFront URL: $(cat ./terraform-outputs/cloudfront_url.txt)"
+      - name: Get SSM Parameters
+        id: ssm
+        run: |
+          echo "S3_BUCKET=$(aws ssm get-parameter --name '/app/s3-bucket' --query 'Parameter.Value' --output text)"
+          echo "CF_ID=$(aws ssm get-parameter --name '/app/cf-id' --query 'Parameter.Value' --output text)"
 
       - name: Debug Terraform Outputs
         run: |
-          echo "S3_BUCKET_NAME: $(cat ./terraform-outputs/s3_bucket_name.txt)"
-          echo "CloudFront Distribution ID: $(cat ./terraform-outputs/distribution_id.txt)"
-          echo "CloudFront URL: $(cat ./terraform-outputs/cloudfront_url.txt)"
+          echo "S3_BUCKET_NAME: $S3_BUCKET"
+          echo "CloudFront Distribution ID: $CF_ID"
 
       - name: Configure AWS CLI
         run: |
@@ -63,5 +73,5 @@ jobs:
         run: |
           DISTRIBUTION_ID=$(cat ./terraform-outputs/distribution_id.txt)
           aws cloudfront create-invalidation \
-            --distribution-id $DISTRIBUTION_ID \
+            --distribution-id $CF_ID \
             --paths "/*"
