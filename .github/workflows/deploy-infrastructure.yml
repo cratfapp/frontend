@@ -9,34 +9,35 @@ on:
 jobs:
   terraform:
     runs-on: ubuntu-latest
-    environment: production  # Use GitHub environment if you have one
-    permissions:
-      contents: read
-      id-token: write  # Needed if using OIDC
-
+    
     env:
-      AWS_REGION: "eu-north-1"
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: "eu-north-1"
 
     steps:
       - uses: actions/checkout@v4
-
-      # Recommended: Use AWS OIDC instead of static credentials
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
-          aws-region: ${{ env.AWS_REGION }}
-
+      
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-
+        
       - name: Terraform Init
         run: terraform init -input=false ./terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Terraform Plan
         run: terraform plan -input=false -out=tfplan ./terraform
+        env:
+          TF_VAR_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          TF_VAR_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Terraform Apply
         run: terraform apply -input=false -auto-approve tfplan
+        env:
+          TF_VAR_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          TF_VAR_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       # Output the CloudFront distribution ID for the frontend deployment
       - name: Save CloudFront Distribution ID
