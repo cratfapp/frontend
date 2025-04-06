@@ -1,0 +1,53 @@
+name: Deploy Infrastructure
+on:
+  push:
+    branches: [ "dev" ]
+    paths: [ "terraform/**" ]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: "eu-north-1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        run: terraform init -input=false ./terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Import GitHub Connection into Terraform
+        run: |
+          cd ../terraform/
+          terraform import aws_apprunner_connection.github_connection arn:aws:apprunner:eu-north-1:135808921133:connection/github-monorepo-connection/d9696a6262774e5a8fdb36bd36dccf3f
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: "eu-north-1"
+
+      - name: Terraform Plan
+        run: terraform plan -input=false -out=tfplan ./terraform
+        env:
+          TF_VAR_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          TF_VAR_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Prepare Website Directory
+        run: |
+          mkdir -p website
+          echo "<html><body>Welcome</body></html>" > website/index.html
+
+      - name: Terraform Apply
+        run: terraform apply -input=false tfplan
+        env:
+          TF_VAR_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          TF_VAR_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          TF_VAR_website_files_path: ${{ github.workspace }}/website
