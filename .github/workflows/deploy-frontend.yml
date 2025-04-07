@@ -21,6 +21,8 @@ jobs:
         run: |
           echo "S3_BUCKET=$(aws ssm get-parameter --name '/app/s3-bucket' --query 'Parameter.Value' --output text)" >> $GITHUB_ENV
           echo "CF_ID=$(aws ssm get-parameter --name '/app/cf-id' --query 'Parameter.Value' --output text)" >> $GITHUB_ENV
+          echo "CLOUDFRONT_URL=$(aws ssm get-parameter --name '/app/cloudfront_url' --query 'Parameter.Value' --output text)" >> $GITHUB_ENV
+          echo "APPRUNNER_URL=$(aws ssm get-parameter --name '/app/apprunner_url' --query 'Parameter.Value' --output text)" >> $GITHUB_ENV
 
       - name: Debug Terraform Outputs
         run: |
